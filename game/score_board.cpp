@@ -4,12 +4,11 @@
 
 #include "score_board.h"
 #include <iostream> //debug
-#include <string>
 
 
 player::player() {
-    for(char & lcv : name) {
-        lcv = '-';
+    for(short lcv = 0; lcv < MAX_NAME_LEN; lcv++) {
+        name[lcv] = '-';
     }
     id = 0;
     name[MAX_NAME_LEN] = '\0';
@@ -47,11 +46,11 @@ void player::update_score(short new_score) {
 
 
 void player::to_string(char * buf) {
-    sprintf(buf,"%s: %d id: %d\n", name, score, id); //possible useless \n
+    sprintf(buf,"%s: %d\n", name, score); //possible useless \n
 }
 
 void player::copy(player input_player) {
-    strcpy_s(name, MAX_NAME_LEN, input_player.name);
+    strcpy(name, input_player.name);
     name_len = input_player.name_len;
     score = input_player.score;
     id = input_player.id;
@@ -64,8 +63,8 @@ score_board::score_board() {
 
 // debug
 void score_board::print_board() {
-    for(player each : players) {
-        each.to_string(buf);
+    for(short lcv = 0; lcv < MAX_PLAYER; lcv++) {
+        players[lcv].to_string(buf);
         std::cout << buf;
     }
 }
@@ -83,6 +82,7 @@ void score_board::update(const char *input_name, short len, short input_score) {
     }
     if(found) {
         players[index].update_score(input_score);
+        swap_player(index);
     }
     else {
         //if players are full
@@ -92,7 +92,7 @@ void score_board::update(const char *input_name, short len, short input_score) {
                 index++;
             }
             if (index < MAX_PLAYER) {
-                shift_player(index);
+                shift_player(index, MAX_PLAYER - 1);
                 players[index].new_player(input_name, len, input_score);
             }
             // or discard player data
@@ -100,14 +100,30 @@ void score_board::update(const char *input_name, short len, short input_score) {
         else {
             num_player++;
             players[num_player - 1].new_player(input_name, len, input_score);
+            swap_player(num_player - 1);
         }
     }
 
 }
 
-void score_board::shift_player(short from) {
-    for (short lcv = MAX_PLAYER; lcv > from + 1; lcv--){
+// shift players down by one
+void score_board::shift_player(short from, short to) {
+    for (short lcv = to; lcv > from; lcv--){
         players[lcv].copy(players[lcv - 1]);
+    }
+}
+
+void score_board::swap_player(short which) {
+    short index = 0;
+    player temp;
+    while (index < which) {
+        if(players[index].get_score() < players[which].get_score()) {
+            temp.copy(players[which]);
+            shift_player(index, which);
+            players[index].copy(temp);
+            break;
+        }
+        index++;
     }
 }
 

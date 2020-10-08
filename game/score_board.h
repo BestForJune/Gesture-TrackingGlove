@@ -7,11 +7,12 @@
 #define MAX_NAME_LEN 10 // maximum number of character
 #define MAX_PLAYER 10 // maximum number of players in
 #define MAX_LINE 20 // maximum number of character in print buffer
+#include <string.h>
 
 
 class player {
 private:
-    char name[MAX_NAME_LEN + 1]{};
+    char name[MAX_NAME_LEN + 1];
     short name_len; //length of the user name
     short score;
     unsigned int id; //faster to look for the player
@@ -32,9 +33,10 @@ class score_board {
 private:
     player players[MAX_PLAYER];
     short num_player; //number of players already on the score board
-    char buf[MAX_LINE]{};
+    char buf[MAX_LINE];
 
-    void shift_player(short from);
+    void shift_player(short from, short to);
+    void swap_player(short which);
 
 public:
     score_board();
