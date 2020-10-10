@@ -1,5 +1,6 @@
 "Core/Src/MY_ILI9341.o"
 "Core/Src/main.o"
+"Core/Src/score_board.o"
 "Core/Src/stm32f4xx_hal_msp.o"
 "Core/Src/stm32f4xx_it.o"
 "Core/Src/syscalls.o"

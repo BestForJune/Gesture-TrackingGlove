@@ -41,6 +41,8 @@
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim2;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -49,14 +51,36 @@ SPI_HandleTypeDef hspi1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t circle[] = {1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1};
-uint8_t rectan[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0};
+uint8_t circle[] = {2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+uint8_t rectan[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1};
+uint8_t tria[] =   {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2};
+
+uint8_t game[] = {1,2,2};
+
+
+int start_cycle_x = 25;
+int start_cycle_y = 25;
+
+int start_recta_x0 = 60;
+int start_recta_y0 = 15;
+int start_recta_x1 = 80;
+int start_recta_y1 = 35;
+
+int start_tri_x0 = 100;
+int start_tri_y0 = 15;
+int start_tri_x1 = 110;
+int start_tri_y1 = 25;
+int start_tri_x2 = 120;
+int start_tri_y2 = 15;
+
+int tim2_i = 0;
 /* USER CODE END 0 */
 
 /**
@@ -88,6 +112,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   ILI9341_Init(&hspi1, LCD_CS_GPIO_Port, LCD_CS_Pin,LCD_DC_GPIO_Port, LCD_DC_Pin, LCD_RST_GPIO_Port, LCD_RST_Pin);
   ILI9341_setRotation(0);
@@ -103,95 +128,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
 	  //menu page setup
-	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
-	  HAL_Delay(500);
-	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_BLACK, COLOR_BLACK, 5);
+	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
+	  	  HAL_Delay(500);
+	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_BLACK, COLOR_BLACK, 5);
 
-	  ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
-	  ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
-	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
+	  	  ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
+	  	  ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
+	  	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
 
-	  //test button and changes on screen
-	  if ((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET){
-		  ILI9341_Fill(COLOR_BLACK);
-		  while ((GPIOA->IDR & GPIO_PIN_0) == (uint32_t)GPIO_PIN_RESET){
-  //			  ILI9341_printText("ScoreBoard", 20, 50, COLOR_GREEN, COLOR_RED, 3);
-  //			  ILI9341_printText("1. 1234", 50, 90, COLOR_GREEN, COLOR_GREEN, 2);
-			  GamePage();
-		  }
-		  ILI9341_Fill(COLOR_BLACK);
+	  	  //test button and changes on screen
+	  	  if ((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET){
+	  		  ILI9341_Fill(COLOR_BLACK);
+//	  		  while ((GPIOA->IDR & GPIO_PIN_0) == (uint32_t)GPIO_PIN_RESET){
+	  			  GamePage();
+//	  		  }
+	  		  ILI9341_Fill(COLOR_BLACK);
 
-	  }
-	  /* USER CODE BEGIN 3 */
+	  	  }
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 	}
-	/* USER CODE END 3 */
-  }
-
-
-  void GamePage (void){
-	int cycle_tracker = 0;
-	int cycle = circle[0];
-	int start_cycle_x = 90;
-	int start_cycle_y = 25;
-
-	int recta_tracker = 0;
-	int recta = rectan[0];
-	int start_recta_x0 = 110;
-	int start_recta_y0 = 15;
-	int start_recta_x1 = 130;
-	int start_recta_y1 = 35;
-
-	for (int i = 1; i < strlen(circle); i++){
-		if (circle[i]){
-			if (circle[i] == 2 && circle[i-1] != 2){
-				cycle_tracker = i;
-			}
-			else if (circle[i] == 1 && circle[i-1] != 1){
-				cycle = i - cycle_tracker;
-				cycle_tracker = 0;
-			}
-			ILI9341_fillCircle(start_cycle_x - 3 * cycle,start_cycle_y + 15 * cycle, 10, COLOR_RED);
-			ILI9341_fillCircle(start_cycle_x - 3 * (cycle - cycle_tracker),start_cycle_y + 15 * (cycle-cycle_tracker), 10, COLOR_RED);
-		}
-
-		if (rectan[i]){
-			if (rectan[i] == 2 && rectan[i-1] != 2){
-				recta_tracker = i;
-			}
-			else if (rectan[i] == 1 && rectan[i-1] != 1){
-				recta = i - recta_tracker;
-				recta_tracker = 0;
-			}
-			ILI9341_Fill_Rect(start_recta_x0 - 2 * recta,start_recta_y0 + 15 * recta, start_recta_x1 - 2 * recta, start_recta_y1 + 15 * recta, COLOR_NAVY);
-			ILI9341_Fill_Rect(start_recta_x0 - 2 * (recta-recta_tracker),start_recta_y0 + 15 * (recta-recta_tracker), start_recta_x1 - 2 * (recta-recta_tracker), start_recta_y1 + 15 * (recta-recta_tracker), COLOR_NAVY);
-		}
-
-//			ILI9341_fillCircle(start_cycle_x,start_cycle_y, 10, COLOR_RED);
-////				HAL_Delay(200);
-////				ILI9341_fillCircle(start_cycle_x,start_cycle_y, 10, COLOR_BLACK);
-//			start_cycle_x -= 3;
-//			start_cycle_y += 10;
-//
-//			ILI9341_Fill_Rect(start_recta_x0,start_recta_y0, start_recta_x1, start_recta_y1, COLOR_NAVY);
-////				HAL_Delay(200);
-////				ILI9341_fillCircle(start_cycle_x,start_cycle_y, 10, COLOR_BLACK);
-////				ILI9341_Fill_Rect(start_recta_x0,start_recta_y0, start_recta_x1, start_recta_y1, COLOR_BLACK);
-//			start_recta_x0 -= 2;
-//			start_recta_y0 += 10;
-//			start_recta_x1 -= 2;
-//			start_recta_y1 += 10;
-		HAL_Delay(200);
-		//clean screen
-		ILI9341_fillCircle(start_cycle_x - 3 * cycle,start_cycle_y + 15 * cycle, 10, COLOR_BLACK);
-		ILI9341_fillCircle(start_cycle_x - 3 * (cycle - cycle_tracker),start_cycle_y + 15 * (cycle-cycle_tracker), 10, COLOR_BLACK);
-		ILI9341_Fill_Rect(start_recta_x0 - 2 * recta,start_recta_y0 + 15 * recta, start_recta_x1 - 2 * recta, start_recta_y1 + 15 * recta, COLOR_BLACK);
-		ILI9341_Fill_Rect(start_recta_x0 - 2 * (recta-recta_tracker),start_recta_y0 + 15 * (recta-recta_tracker), start_recta_x1 - 2 * (recta-recta_tracker), start_recta_y1 + 15 * (recta-recta_tracker), COLOR_BLACK);
-
-		cycle += 1;
-		recta++;
-	}
+  /* USER CODE END 3 */
 }
 
 /**
@@ -277,6 +236,51 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 25599;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 599;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -319,7 +323,111 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* Prevent unused argument(s) compilation warning */
+  if(htim->Instance == TIM2){
+	  for (int i = 0; i < 15; i++){
+		  ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * tim2_i, 10, COLOR_RED);
+		  ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * tim2_i, 10, COLOR_BLACK);
+//	  tim2_i++;
+//	  if (tim2_i == 14) {HAL_TIM_Base_Stop(&htim2);}
+	  }
+	  HAL_TIM_Base_Stop(&htim2);
+  }
 
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
+   */
+}
+
+void GamePage (void){
+
+
+//	char snum[5];
+//	int num = tria[0];
+//	itoa(num, snum, 10);
+
+//	for (int i = 0; game[i] != '\0'; i++){
+//		if (game[i] == 1){
+//			HAL_TIM_Base_Start_IT(&htim2);
+//		}
+//	}
+	int cycle_tracker = 0;
+	int cycle = 0;
+
+	int recta_tracker = 0;
+	int recta = 0;
+
+	int tri_tracker = 0;
+	int tri = 0;
+
+//	HAL_TIM_Base_Start_IT(&htim2);
+
+	for (int i = 1; circle[i] != '\0'; i++){
+
+//		 ILI9341_printText(snum, 50, 180, COLOR_GREEN, COLOR_RED, 2);
+
+		if (circle[i]!=1){
+			cycle++;
+			if (circle[i] == 3 && circle[i-1] != 3){
+				cycle_tracker = cycle;
+			}
+			else if (circle[i] == 2 && circle[i-1] != 2 && circle[i-1] != 1){
+				cycle = cycle - cycle_tracker;
+				cycle_tracker = 0;
+			}
+			ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * cycle, 10, COLOR_RED);
+			ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * (cycle-cycle_tracker), 10, COLOR_RED);
+		}
+		else{
+			cycle = 0;
+		}
+
+
+		if (rectan[i]!=1){
+			recta++;
+			if (rectan[i] == 3 && rectan[i-1] != 3){
+				recta_tracker = recta;
+			}
+			else if (rectan[i] == 2 && rectan[i-1] != 2 && rectan[i-1] != 1){
+				recta = recta - recta_tracker;
+				recta_tracker = 0;
+			}
+			ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * recta, start_recta_x1, start_recta_y1 + 15 * recta, COLOR_BLUE);
+			ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * (recta-recta_tracker), start_recta_x1, start_recta_y1 + 15 * (recta-recta_tracker), COLOR_BLUE);
+		}
+		else{
+			recta = 0;
+		}
+
+		if (tria[i]!=1){
+			tri++;
+			if (tria[i] == 3 && tria[i-1] != 3){
+				tri_tracker = tri;
+			}
+			else if (tria[i] == 2 && tria[i-1] != 2 && tria[i-1] != 1){
+				tri = tri - tri_tracker;
+				tri_tracker = 0;
+			}
+			ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * tri, start_tri_x1, start_tri_y1 + 15 * tri, start_tri_x2, start_tri_y2 + 15 * tri, COLOR_GREENYELLOW);
+			ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * (tri-tri_tracker), start_tri_x1, start_tri_y1 + 15 * (tri-tri_tracker), start_tri_x2, start_tri_y2 + 15 * (tri-tri_tracker), COLOR_GREENYELLOW);
+		}
+		else{
+			tri = 0;
+		}
+
+
+		HAL_Delay(100);
+		//clean screen
+		ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * cycle, 10, COLOR_BLACK);
+		ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * (cycle-cycle_tracker), 10, COLOR_BLACK);
+		ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * recta, start_recta_x1, start_recta_y1 + 15 * recta, COLOR_BLACK);
+		ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * (recta-recta_tracker), start_recta_x1, start_recta_y1 + 15 * (recta-recta_tracker), COLOR_BLACK);
+		ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * tri, start_tri_x1, start_tri_y1 + 15 * tri, start_tri_x2, start_tri_y2 + 15 * tri, COLOR_BLACK);
+		ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * (tri-tri_tracker), start_tri_x1, start_tri_y1 + 15 * (tri-tri_tracker), start_tri_x2, start_tri_y2 + 15 * (tri-tri_tracker), COLOR_BLACK);
+	}
+}
 /* USER CODE END 4 */
 
 /**
