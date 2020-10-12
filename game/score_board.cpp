@@ -2,7 +2,7 @@
 // Created by zheng on 10/7/2020.
 //
 
-#include "score_board.h"
+#include "score_board.hpp"
 #include <iostream> //debug
 
 

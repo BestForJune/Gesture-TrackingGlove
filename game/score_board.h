@@ -1,47 +1,41 @@
 //
-// Created by zheng on 10/7/2020.
+// Created by 傅正森 on 2020/10/11.
 //
 
-#ifndef GESTURE_TRACKINGGLOVE_SCORE_BOARD_H
-#define GESTURE_TRACKINGGLOVE_SCORE_BOARD_H
+#ifndef TEST_SCORE_BOARD_H
+#define TEST_SCORE_BOARD_H
+
 #define MAX_NAME_LEN 10 // maximum number of character
 #define MAX_PLAYER 10 // maximum number of players in
 #define MAX_LINE 20 // maximum number of character in print buffer
+#include <stdio.h>
 #include <string.h>
 
-
-class player {
-private:
+typedef struct PLAYER{
     char name[MAX_NAME_LEN + 1];
     short name_len; //length of the user name
     short score;
     unsigned int id; //faster to look for the player
+} player;
 
-public:
-    player();
-    void new_player(const char* input_name, short len, short input_score);
-    void update_score(short new_score);
-    void to_string(char * buf);
-    unsigned int get_id() {return  id;};
-    short get_score() {return score;};
-    void copy(player input_player);
-};
-
+void player_init(player* input_player);
+void new_player(player* input_player, const char* input_name, short len, short input_score);
+void update_score(player* input_player, short new_score);
+void to_string(player* input_player, char * buf);
+void player_copy(player* to_player, player* from_player);
 unsigned int calc_id(const char *name, short len);
 
-class score_board {
-private:
+typedef struct SCOREBOARD {
     player players[MAX_PLAYER];
     short num_player; //number of players already on the score board
     char buf[MAX_LINE];
+} scoreboard;
 
-    void shift_player(short from, short to);
-    void swap_player(short which);
+void scoreboard_init(scoreboard * input_sb);
+void shift_player(scoreboard * input_sb, short from, short to);
+void swap_player(scoreboard * input_sb, short which);
+void print_board(scoreboard * input_sb);
+void scoreboard_update(scoreboard * input_sb, const char* input_name, short len, short input_score);
 
-public:
-    score_board();
-    void print_board();
-    void update(const char* input_name, short len, short input_score);
-};
 
-#endif //GESTURE_TRACKINGGLOVE_SCORE_BOARD_H
+#endif //TEST_SCORE_BOARD_H
