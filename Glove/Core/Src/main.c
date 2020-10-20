@@ -53,7 +53,7 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-
+enum state_type{menu, game};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,7 +76,7 @@ uint8_t circle[] = {2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,
 uint8_t rectan[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1};
 uint8_t tria[] =   {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2};
 
-uint8_t game[] = {1,2,2};
+//uint8_t game[] = {1,2,2};
 
 
 int start_cycle_x = 25;
@@ -95,6 +95,8 @@ int start_tri_x2 = 120;
 int start_tri_y2 = 15;
 
 int tim2_i = 0;
+
+enum state_type state = menu;
 
 extern ApplicationTypeDef Appli_state;
 /* USER CODE END 0 */
@@ -154,24 +156,33 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  //read GPIO
+	  if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4)) {
+		  state = game;
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+	  } else {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+	  }
 	  //menu page setup
+	  if(state == menu){
 	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
-	  	  HAL_Delay(500);
+//	  	  HAL_Delay(500);
 	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_BLACK, COLOR_BLACK, 5);
 
 	  	  ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
 	  	  ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
 	  	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
-
+	  }
 	  	  //test button and changes on screen
-	  	  if ((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET){
-	  		  ILI9341_Fill(COLOR_BLACK);
-//	  		  while ((GPIOA->IDR & GPIO_PIN_0) == (uint32_t)GPIO_PIN_RESET){
-	  			  GamePage();
-//	  		  }
-	  		  ILI9341_Fill(COLOR_BLACK);
+	  if (state == game){
 
-	  	  }
+		  ILI9341_Fill(COLOR_BLACK);
+//	  		  while ((GPIOA->IDR & GPIO_PIN_0) == (uint32_t)GPIO_PIN_RESET){
+			  GamePage();
+//	  		  }
+		  ILI9341_Fill(COLOR_BLACK);
+		  state = menu;
+	  }
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
@@ -478,6 +489,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LCD_CS_Pin */
   GPIO_InitStruct.Pin = LCD_CS_Pin;

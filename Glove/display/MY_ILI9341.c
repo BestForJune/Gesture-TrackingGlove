@@ -457,11 +457,11 @@ void ILI9341_Fill(uint16_t color) {
 	}
 	
 	
-	while (n) {
-			n--;
-       ILI9341_SendData(color>>8);
-				ILI9341_SendData(color&0xff);
-	}
+//	while (n) {
+//			n--;
+//       ILI9341_SendData(color>>8);
+//				ILI9341_SendData(color&0xff);
+//	}
 }
 //7. Rectangle drawing functions
 void ILI9341_Fill_Rect(unsigned int x0,unsigned int y0, unsigned int x1,unsigned int y1, uint16_t color) { 
