@@ -118,7 +118,7 @@ void ILI9341_Init(SPI_HandleTypeDef *spiLcdHandle, GPIO_TypeDef *csPORT, uint16_
 //5. Write data to a single pixel
 void ILI9341_DrawPixel(uint16_t x, uint16_t y, uint16_t color); //Draw single pixel to ILI9341
 //6. Fill the entire screen with a background color
-void ILI9341_Fill(uint16_t color); //Fill entire ILI9341 with color
+void ILI9341_Fill(uint8_t* screen); //Fill entire ILI9341 with color
 //7. Rectangle drawing functions
 void ILI9341_Fill_Rect(unsigned int x0, unsigned int y0, unsigned int x1, unsigned int y1, uint16_t color);
 //8. Circle drawing functions

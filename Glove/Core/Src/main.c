@@ -75,7 +75,7 @@ void MX_USB_HOST_Process(void);
 uint8_t circle[] = {2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 uint8_t rectan[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1};
 uint8_t tria[] =   {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2};
-
+uint8_t screen[ILI9341_WIDTH *2];
 //uint8_t game[] = {1,2,2};
 
 
@@ -108,7 +108,9 @@ extern ApplicationTypeDef Appli_state;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	for(int lcv = 0; lcv < ILI9341_WIDTH *2; lcv ++) {
+		screen[lcv] = 0;
+	}
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -139,7 +141,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   ILI9341_Init(&hspi1, LCD_CS_GPIO_Port, LCD_CS_Pin,LCD_DC_GPIO_Port, LCD_DC_Pin, LCD_RST_GPIO_Port, LCD_RST_Pin);
   ILI9341_setRotation(0);
-  ILI9341_Fill(COLOR_BLACK);
+  ILI9341_Fill(screen);
 
   int startmenu_x = 50;
   int startmenu_y = 100;
@@ -176,11 +178,11 @@ int main(void)
 	  	  //test button and changes on screen
 	  if (state == game){
 
-		  ILI9341_Fill(COLOR_BLACK);
+		  ILI9341_Fill(screen);
 //	  		  while ((GPIOA->IDR & GPIO_PIN_0) == (uint32_t)GPIO_PIN_RESET){
 			  GamePage();
 //	  		  }
-		  ILI9341_Fill(COLOR_BLACK);
+		  ILI9341_Fill(screen);
 		  state = menu;
 	  }
     /* USER CODE END WHILE */
