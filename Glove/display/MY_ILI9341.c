@@ -16,6 +16,7 @@ Description:			This is an STM32 device driver library for the ILI9341 SPI LCD di
 //Header files
 #include "MY_ILI9341.h"
 
+uint16_t black_line[ILI9341_WIDTH*2] = {0x0000};
 static uint8_t rotationNum=1;
 static bool _cp437    = false;
 static SPI_HandleTypeDef lcdSPIhandle;
@@ -455,6 +456,47 @@ void ILI9341_Fill(uint8_t* screen) {
 	for(int lcv = 0; lcv < ILI9341_HEIGHT; lcv++){
 		HAL_SPI_Transmit(&lcdSPIhandle, screen, ILI9341_WIDTH * 2, 2000);
 	}
+
+	//Bring CS HIGH
+	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_SET);
+}
+
+void ILI9341_Fill_Line (uint8_t* each_line, unsigned int index) {
+	ILI9341_SetCursorPosition(0, index,   ILI9341_WIDTH -1, ILI9341_HEIGHT-1);
+	//Write byte using SPI
+
+	HAL_GPIO_WritePin(tftDC_GPIO, tftDC_PIN, GPIO_PIN_SET);
+	//Put CS LOW
+	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_RESET);
+
+	uint16_t orig_line[ILI9341_WIDTH*2] = {0x0000};
+	if (each_line[0] == 1){
+		for(int lcv = 0; lcv < 25; lcv ++) {
+			orig_line[15+lcv] = COLOR_RED;
+		}
+	}
+	if (each_line[1] == 1){
+		for(int lcv = 0; lcv < 25; lcv ++) {
+			orig_line[60+lcv] = COLOR_PURPLE;
+		}
+	}
+	if (each_line[2] == 1){
+		for(int lcv = 0; lcv < 25; lcv ++) {
+			orig_line[105+lcv] = COLOR_YELLOW;
+		}
+	}
+	if (each_line[3] == 1){
+		for(int lcv = 0; lcv < 25; lcv ++) {
+			orig_line[150+lcv] = COLOR_NAVY;
+		}
+	}
+	if (each_line[4] == 1){
+		for(int lcv = 0; lcv < 25; lcv ++) {
+			orig_line[195+lcv] = COLOR_WHITE;
+		}
+	}
+
+	HAL_SPI_Transmit(&lcdSPIhandle, orig_line, ILI9341_WIDTH*2, 2000);
 
 	//Bring CS HIGH
 	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_SET);
