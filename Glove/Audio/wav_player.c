@@ -42,7 +42,7 @@ static void wavPlayer_reset(void)
  * @brief Select WAV file to play
  * @retval returns true when file is found in USB Drive
  */
-bool wavPlayer_fileSelect(const char* filePath)
+bool wavPlayer_fileSelect(const char* filePath, uint8_t* seed)
 {
   WAV_HeaderTypeDef wavHeader;
   UINT readBytes = 0;
@@ -57,6 +57,13 @@ bool wavPlayer_fileSelect(const char* filePath)
   fileLength = wavHeader.FileSize;
   //Play the WAV file with frequency specified in header
   samplingFreq = wavHeader.SampleRate;
+  //initialize seed
+  uint8_t * ptr = &wavHeader;
+  *seed = 0xff;
+  for(int lcv = 0; lcv < sizeof(wavHeader); lcv++) {
+	  *seed ^= *ptr;
+	  ptr++;
+  }
   return true;
 }
 

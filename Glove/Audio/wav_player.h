@@ -49,7 +49,7 @@ typedef struct
  * @brief Select WAV file to play
  * @retval returns true when file is found in USB Drive
  */
-bool wavPlayer_fileSelect(const char* filePath);
+bool wavPlayer_fileSelect(const char* filePath, uint8_t* seed);
 
 /**
  * @brief WAV File Play

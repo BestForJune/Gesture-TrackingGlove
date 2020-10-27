@@ -155,6 +155,13 @@ int main(void)
   CS43_Init(hi2c1, MODE_I2S);
 	CS43_SetVolume(230);//0-255
 	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
+	ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
+//	  	  HAL_Delay(500);
+
+
+	  ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
+	  ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
+	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
 
 	audioI2S_setHandle(&hi2s3);
   /* USER CODE END 2 */
@@ -164,7 +171,7 @@ int main(void)
   while (1)
   {
 	  //read GPIO
-	  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
+	  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
 		  state = GAME;
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
 	  } else {
@@ -172,13 +179,7 @@ int main(void)
 	  }
 	  //menu page setup
 	  if(state == MENU){
-	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
-//	  	  HAL_Delay(500);
-	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_BLACK, COLOR_BLACK, 5);
 
-	  	  ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
-	  	  ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
-	  	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
 	  }
 	  	  //test button and changes on screen
 	  if (state == GAME){
@@ -188,6 +189,7 @@ int main(void)
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
+    music();
   }
   /* USER CODE END 3 */
 }
@@ -494,12 +496,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 
 void music() {
-	 if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0)) {
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-		} else {
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-		}
-
 		if(Appli_state == APPLICATION_START) {
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
 		}
@@ -510,6 +506,7 @@ void music() {
 		}
 
 		if(Appli_state == APPLICATION_READY) {
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
 			if(!isMounted){
 				f_mount(&USBHFatFS, (const TCHAR*) USBHPath, 0);
 				isMounted = 1;
@@ -520,11 +517,10 @@ void music() {
 					uint8_t seed;
 
 					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-//					wavPlayer_fileSelect(WAV_FILE1, &seed);
+					wavPlayer_fileSelect(WAV_FILE1, &seed);
 					game_arr_init(&g_arr, seed);
 					wavPlayer_play();
-
-					HAL_Delay(1000);
+					music_status = PLAYING;
 				} else {
 					if(wavPlayer_isFinished()) {
 						state = MENU;
