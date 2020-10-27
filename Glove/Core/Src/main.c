@@ -27,6 +27,7 @@
 #include "audioI2S.h"
 #include "MY_CS43L22.h"
 #include "wav_player.h"
+#include "game_arr.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,6 +36,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+enum state_type{MENU, GAME};
+enum music_status_enum {PLAYING, STOP};
+#define WAV_FILE1 "cello.wav"
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,7 +57,7 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-enum state_type{menu, game};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,7 +71,8 @@ static void MX_I2S3_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-#define WAV_FILE1 "cello.wav"
+void music();
+void arr_update(game_arr * arr);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -76,8 +81,7 @@ uint8_t circle[] = {2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,
 uint8_t rectan[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1};
 uint8_t tria[] =   {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2};
 uint8_t screen[ILI9341_WIDTH *2];
-
-//uint8_t game[] = {1,2,2};
+game_arr g_arr;
 
 
 int start_cycle_x = 25;
@@ -96,8 +100,9 @@ int start_tri_x2 = 120;
 int start_tri_y2 = 15;
 
 int tim2_i = 0;
-
-enum state_type state = menu;
+enum state_type state = MENU;
+enum music_status_enum music_status = STOP;
+bool isMounted = 0;
 
 extern ApplicationTypeDef Appli_state;
 /* USER CODE END 0 */
@@ -152,7 +157,6 @@ int main(void)
 	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
 
 	audioI2S_setHandle(&hi2s3);
-	 bool isMounted = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -161,13 +165,13 @@ int main(void)
   {
 	  //read GPIO
 	  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
-		  state = game;
+		  state = GAME;
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
 	  } else {
 		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);
 	  }
 	  //menu page setup
-	  if(state == menu){
+	  if(state == MENU){
 	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
 //	  	  HAL_Delay(500);
 	  	  ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_BLACK, COLOR_BLACK, 5);
@@ -177,52 +181,13 @@ int main(void)
 	  	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
 	  }
 	  	  //test button and changes on screen
-	  if (state == game){
-
-		  ILI9341_Fill(screen);
-//	  		  while ((GPIOA->IDR & GPIO_PIN_0) == (uint32_t)GPIO_PIN_RESET){
-			  GamePage();
-//	  		  }
-		  ILI9341_Fill(screen);
-		  state = menu;
+	  if (state == GAME){
+		  arr_update(&g_arr);
 	  }
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-    if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0)) {
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
-	} else {
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
-	}
-
-	if(Appli_state == APPLICATION_START) {
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
-	}
-	else if(Appli_state == APPLICATION_DISCONNECT) {
-	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
-	  f_mount(NULL, (TCHAR const*)"", 0);
-	  isMounted = 0;
-	}
-
-	if(Appli_state == APPLICATION_READY) {
-		if(!isMounted){
-			f_mount(&USBHFatFS, (const TCHAR*) USBHPath, 0);
-			isMounted = 1;
-		}
-
-		if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0)) {
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-			wavPlayer_fileSelect(WAV_FILE1);
-			wavPlayer_play();
-			while(!wavPlayer_isFinished()) {
-				wavPlayer_process();
-			}
-			wavPlayer_stop();
-			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-			HAL_Delay(1000);
-		}
-	}
   }
   /* USER CODE END 3 */
 }
@@ -527,116 +492,69 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
    */
 }
 
-void GamePage (void){
-	uint8_t line1[] = {1,1,1,1,1};
-	uint8_t line2[] = {1,1,0,0,1};
-	uint8_t line3[] = {0,1,1,0,0};
-	uint8_t line4[] = {0,0,0,0,0};
-	uint8_t line5[] = {1,1,0,0,0};
-	uint8_t line6[] = {0,0,0,1,1};
-	uint8_t line7[] = {1,0,0,0,1};
-	uint8_t line8[] = {0,1,0,1,1};
-	uint8_t* test_lines[] = {line1, line2, line3, line4, line5, line6, line7, line8};
 
-	int track = 0;
-	int index_track = track / 25;
-	while (1){
-		for (int index = 0; index <= index_track; index++){
-			uint8_t * ptr = test_lines[index_track - index];
-			for (int i = track - index * 25; i < 25 + track - index * 25; i ++){
-				ILI9341_Fill_Line(ptr, i);
+void music() {
+	 if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0)) {
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+		} else {
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+		}
+
+		if(Appli_state == APPLICATION_START) {
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+		}
+		else if(Appli_state == APPLICATION_DISCONNECT) {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+		  f_mount(NULL, (TCHAR const*)"", 0);
+		  isMounted = 0;
+		}
+
+		if(Appli_state == APPLICATION_READY) {
+			if(!isMounted){
+				f_mount(&USBHFatFS, (const TCHAR*) USBHPath, 0);
+				isMounted = 1;
+			}
+
+			if(state == GAME) {
+				if(music_status == STOP){
+					uint8_t seed;
+
+					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+//					wavPlayer_fileSelect(WAV_FILE1, &seed);
+					game_arr_init(&g_arr, seed);
+					wavPlayer_play();
+
+					HAL_Delay(1000);
+				} else {
+					if(wavPlayer_isFinished()) {
+						state = MENU;
+						music_status = STOP;
+						wavPlayer_stop();
+						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+					} else {
+						wavPlayer_process();
+					}
+				}
 			}
 		}
-		track += 25;
-		if (track > ILI9341_HEIGHT)
-			track = 0;
-		index_track = track / 25;
-		HAL_Delay(500);
-	}
+}
 
-//	char snum[5];
-//	int num = tria[0];
-//	itoa(num, snum, 10);
+void arr_update(game_arr * arr) {
+    //condition to generate a new line
+    if(arr->lines[arr->head].y_pos >= 80) {
+        new_line(arr);
+    }
+    uint8_t ptr = arr->head; // linked list traverse pointer
+    while(ptr != MAX_LINE) {
+        arr->lines[ptr].y_pos++;
+        ILI9341_Fill_Black_Line(arr->lines[ptr].y_pos - 10);
+        ILI9341_Fill_Line(&arr->lines[ptr], arr->lines[ptr].y_pos + 10);
+        if(arr->lines[arr->lines[ptr].next].y_pos >= HEIGHT) {
+            arr->lines[ptr].next = MAX_LINE;
+        }
 
-//	for (int i = 0; game[i] != '\0'; i++){
-//		if (game[i] == 1){
-//			HAL_TIM_Base_Start_IT(&htim2);
-//		}
-//	}
-//	int cycle_tracker = 0;
-//	int cycle = 0;
-//
-//	int recta_tracker = 0;
-//	int recta = 0;
-//
-//	int tri_tracker = 0;
-//	int tri = 0;
-//
-////	HAL_TIM_Base_Start_IT(&htim2);
-//
-//	for (int i = 1; circle[i] != '\0'; i++){
-//
-////		 ILI9341_printText(snum, 50, 180, COLOR_GREEN, COLOR_RED, 2);
-//
-//		if (circle[i]!=1){
-//			cycle++;
-//			if (circle[i] == 3 && circle[i-1] != 3){
-//				cycle_tracker = cycle;
-//			}
-//			else if (circle[i] == 2 && circle[i-1] != 2 && circle[i-1] != 1){
-//				cycle = cycle - cycle_tracker;
-//				cycle_tracker = 0;
-//			}
-//			ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * cycle, 10, COLOR_RED);
-//			ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * (cycle-cycle_tracker), 10, COLOR_RED);
-//		}
-//		else{
-//			cycle = 0;
-//		}
-//
-//
-//		if (rectan[i]!=1){
-//			recta++;
-//			if (rectan[i] == 3 && rectan[i-1] != 3){
-//				recta_tracker = recta;
-//			}
-//			else if (rectan[i] == 2 && rectan[i-1] != 2 && rectan[i-1] != 1){
-//				recta = recta - recta_tracker;
-//				recta_tracker = 0;
-//			}
-//			ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * recta, start_recta_x1, start_recta_y1 + 15 * recta, COLOR_BLUE);
-//			ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * (recta-recta_tracker), start_recta_x1, start_recta_y1 + 15 * (recta-recta_tracker), COLOR_BLUE);
-//		}
-//		else{
-//			recta = 0;
-//		}
-//
-//		if (tria[i]!=1){
-//			tri++;
-//			if (tria[i] == 3 && tria[i-1] != 3){
-//				tri_tracker = tri;
-//			}
-//			else if (tria[i] == 2 && tria[i-1] != 2 && tria[i-1] != 1){
-//				tri = tri - tri_tracker;
-//				tri_tracker = 0;
-//			}
-//			ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * tri, start_tri_x1, start_tri_y1 + 15 * tri, start_tri_x2, start_tri_y2 + 15 * tri, COLOR_GREENYELLOW);
-//			ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * (tri-tri_tracker), start_tri_x1, start_tri_y1 + 15 * (tri-tri_tracker), start_tri_x2, start_tri_y2 + 15 * (tri-tri_tracker), COLOR_GREENYELLOW);
-//		}
-//		else{
-//			tri = 0;
-//		}
-//
-//
-//		HAL_Delay(100);
-//		//clean screen
-//		ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * cycle, 10, COLOR_BLACK);
-//		ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * (cycle-cycle_tracker), 10, COLOR_BLACK);
-//		ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * recta, start_recta_x1, start_recta_y1 + 15 * recta, COLOR_BLACK);
-//		ILI9341_Fill_Rect(start_recta_x0,start_recta_y0 + 15 * (recta-recta_tracker), start_recta_x1, start_recta_y1 + 15 * (recta-recta_tracker), COLOR_BLACK);
-//		ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * tri, start_tri_x1, start_tri_y1 + 15 * tri, start_tri_x2, start_tri_y2 + 15 * tri, COLOR_BLACK);
-//		ILI9341_fillTriangle(start_tri_x0, start_tri_y0 + 15 * (tri-tri_tracker), start_tri_x1, start_tri_y1 + 15 * (tri-tri_tracker), start_tri_x2, start_tri_y2 + 15 * (tri-tri_tracker), COLOR_BLACK);
-//	}
+        ptr = arr->lines[ptr].next;
+    }
 }
 /* USER CODE END 4 */
 

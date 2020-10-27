@@ -461,7 +461,7 @@ void ILI9341_Fill(uint8_t* screen) {
 	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_SET);
 }
 
-void ILI9341_Fill_Line (uint8_t* each_line, unsigned int index) {
+void ILI9341_Fill_Line (uint8_t* each_line, uint16_t index) {
 	ILI9341_SetCursorPosition(0, index,   ILI9341_WIDTH -1, ILI9341_HEIGHT-1);
 	//Write byte using SPI
 
@@ -496,6 +496,21 @@ void ILI9341_Fill_Line (uint8_t* each_line, unsigned int index) {
 		}
 	}
 
+	HAL_SPI_Transmit(&lcdSPIhandle, orig_line, ILI9341_WIDTH*2, 2000);
+
+	//Bring CS HIGH
+	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_SET);
+}
+
+void ILI9341_Fill_Black_Line(uint16_t index) {
+	ILI9341_SetCursorPosition(0, index,   ILI9341_WIDTH -1, ILI9341_HEIGHT-1);
+	//Write byte using SPI
+
+	HAL_GPIO_WritePin(tftDC_GPIO, tftDC_PIN, GPIO_PIN_SET);
+	//Put CS LOW
+	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_RESET);
+
+	uint16_t orig_line[ILI9341_WIDTH*2] = {0x0000};
 	HAL_SPI_Transmit(&lcdSPIhandle, orig_line, ILI9341_WIDTH*2, 2000);
 
 	//Bring CS HIGH
