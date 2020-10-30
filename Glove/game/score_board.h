@@ -34,7 +34,7 @@ typedef struct SCOREBOARD {
 void scoreboard_init(scoreboard * input_sb);
 void shift_player(scoreboard * input_sb, short from, short to);
 void swap_player(scoreboard * input_sb, short which);
-void print_board(scoreboard * input_sb);
+//void print_board(scoreboard * input_sb);
 void scoreboard_update(scoreboard * input_sb, const char* input_name, short len, short input_score);
 
 

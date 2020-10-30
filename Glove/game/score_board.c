@@ -43,7 +43,7 @@ void update_score(player* input_player, short new_score) {
 }
 
 void to_string(player* input_player, char * buf) {
-    sprintf(buf,"%s: %d\n", input_player -> name, input_player -> score); //possible useless \n
+    sprintf(buf,"%s: %d", input_player -> name, input_player -> score); //possible useless \n
 }
 
 void player_copy(player* to_player, player* from_player) {
@@ -80,12 +80,13 @@ void swap_player(scoreboard * input_sb, short which) {
     }
 }
 
-void print_board(scoreboard * input_sb) {
-    for(short lcv = 0; lcv < MAX_PLAYER; lcv++) {
-        to_string(&(input_sb->players[lcv]), input_sb->buf);
-        printf(input_sb->buf);
-    }
-}
+//void print_board(scoreboard * input_sb) {
+//    for(short lcv = 0; lcv < MAX_PLAYER; lcv++) {
+//        to_string(&(input_sb->players[lcv]), input_sb->buf);
+////        printf(input_sb->buf);
+//        ILI9341_printText(input_sb->buf, 80, 100, COLOR_GREEN, COLOR_GREEN, 2);
+//    }
+//}
 
 void scoreboard_update(scoreboard * input_sb, const char* input_name, short len, short input_score) {
     short index = 0;

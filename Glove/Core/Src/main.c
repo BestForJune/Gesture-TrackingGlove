@@ -28,6 +28,7 @@
 #include "MY_CS43L22.h"
 #include "wav_player.h"
 #include "game_arr.h"
+#include "score_board.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,7 +37,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-enum state_type{MENU, GAME};
+enum state_type{MENU, GAME, SCOREBOARD};
 enum music_status_enum {PLAYING, STOP};
 #define WAV_FILE1 "cello.wav"
 /* USER CODE END PD */
@@ -73,38 +74,31 @@ void MX_USB_HOST_Process(void);
 /* USER CODE BEGIN PFP */
 void music();
 void arr_update(game_arr * arr);
+void print_board(scoreboard * input_sb);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t circle[] = {2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-uint8_t rectan[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1};
-uint8_t tria[] =   {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,2,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2};
-uint8_t screen[ILI9341_WIDTH *2];
+uint8_t screen[ILI9341_WIDTH *2] = {0x0000};
 game_arr g_arr;
-
 
 int start_cycle_x = 25;
 int start_cycle_y = 25;
-
-int start_recta_x0 = 60;
-int start_recta_y0 = 15;
-int start_recta_x1 = 80;
-int start_recta_y1 = 35;
-
-int start_tri_x0 = 100;
-int start_tri_y0 = 15;
-int start_tri_x1 = 110;
-int start_tri_y1 = 25;
-int start_tri_x2 = 120;
-int start_tri_y2 = 15;
 
 int tim2_i = 0;
 enum state_type state = MENU;
 enum music_status_enum music_status = STOP;
 bool isMounted = 0;
 
+short game_score = 0;
+char buffer [3];
+
 extern ApplicationTypeDef Appli_state;
+
+int test_track = 0;
+scoreboard * board;
+char buf[20];
+
 /* USER CODE END 0 */
 
 /**
@@ -114,11 +108,6 @@ extern ApplicationTypeDef Appli_state;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	for(int lcv = 0; lcv < ILI9341_WIDTH *2; lcv ++) {
-		screen[lcv] = 0;
-	}
-  /* USER CODE END 1 */
-
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -144,54 +133,77 @@ int main(void)
   MX_I2S3_Init();
   MX_FATFS_Init();
   MX_USB_HOST_Init();
-  /* USER CODE BEGIN 2 */
+
   ILI9341_Init(&hspi1, LCD_CS_GPIO_Port, LCD_CS_Pin,LCD_DC_GPIO_Port, LCD_DC_Pin, LCD_RST_GPIO_Port, LCD_RST_Pin);
   ILI9341_setRotation(0);
-  ILI9341_Fill(screen);
-
-  int startmenu_x = 50;
-  int startmenu_y = 100;
 
   CS43_Init(hi2c1, MODE_I2S);
-	CS43_SetVolume(230);//0-255
-	CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
-	ILI9341_printText("Start", startmenu_x, startmenu_y, COLOR_GREEN, COLOR_GREEN, 5);
-//	  	  HAL_Delay(500);
+  CS43_SetVolume(230);//0-255
+  CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
+  /* USER CODE END 1 */
 
-
-	  ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
-	  ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
-	  ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
-
-	audioI2S_setHandle(&hi2s3);
+  /* USER CODE BEGIN 2 */
+  menu_page_setup();
+//  scoreboard_init(board); //bug
+  audioI2S_setHandle(&hi2s3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //read GPIO
-	  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
-		  state = GAME;
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
-	  } else {
-		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);
-	  }
-	  //menu page setup
-	  if(state == MENU){
+	  /* USER CODE BEGIN 3 */
 
-	  }
-	  	  //test button and changes on screen
-	  if (state == GAME){
-		  arr_update(&g_arr);
-	  }
-    /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
+	  		  //read GPIO
+	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
+//	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
+	  			  state = GAME;
+	  			  game_arr_init(&g_arr, 5);
+	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
+	  		  }else {
+	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);
+	  		  }
 
-    /* USER CODE BEGIN 3 */
-    music();
+	  		  //test button and changes on screen
+	  		  if (state == GAME){
+	  			  arr_update(&g_arr);
+	  			  sprintf(buffer, "%d", game_score);
+	  			  ILI9341_printGameScore(buffer, 190, 20, COLOR_WHITE, COLOR_WHITE, 3);
+	  	//		  game_score++;
+	  			  test_track++;
+	  		  }
+
+	  		  //test the situation when game ends
+	  		  //should be deleted
+	  		  if (test_track > 2000){
+	  			ILI9341_Fill(screen);
+	  			state = SCOREBOARD;
+	  			test_track = 0;
+	  			game_score = 0;
+	  		  }
+
+	  		  if (state == SCOREBOARD){
+	  			ILI9341_printText("Scoreboard", 50, 20, COLOR_GREEN, COLOR_GREEN, 2);
+//	  			scoreboard_update(board, "P1", 2, game_score); //bug
+//	  			print_board(board); //bug
+	  			sprintf(buf,"%s: %d", "player1", game_score); //testing purpose
+	  			ILI9341_printText(buf, 50, 100, COLOR_GREEN, COLOR_GREEN, 2);
+	  		  }
+
+	  	      MX_USB_HOST_Process();
+	  	      music();
   }
   /* USER CODE END 3 */
+}
+
+void menu_page_setup(void){
+	//menu page setup
+	ILI9341_Fill(screen);
+    ILI9341_printText("Start", 50, 100, COLOR_GREEN, COLOR_GREEN, 5);
+    ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
+    ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
+    ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
+
+    return;
 }
 
 /**
@@ -537,7 +549,7 @@ void music() {
 
 void arr_update(game_arr * arr) {
     //condition to generate a new line
-    if(arr->lines[arr->head].y_pos >= 80) {
+    if(arr->lines[arr->head].y_pos >= 150) {
         new_line(arr);
     }
     uint8_t ptr = arr->head; // linked list traverse pointer
@@ -547,9 +559,17 @@ void arr_update(game_arr * arr) {
         ILI9341_Fill_Line(&arr->lines[ptr], arr->lines[ptr].y_pos + 10);
         if(arr->lines[arr->lines[ptr].next].y_pos >= HEIGHT) {
             arr->lines[ptr].next = MAX_LINE;
+            game_score++;
         }
 
         ptr = arr->lines[ptr].next;
+    }
+}
+
+void print_board(scoreboard * input_sb) {
+    for(short lcv = 0; lcv < MAX_PLAYER; lcv++) {
+        to_string(&(input_sb->players[lcv]), input_sb->buf);
+        ILI9341_printText("wtf", 50, 100, COLOR_GREEN, COLOR_GREEN, 2);
     }
 }
 /* USER CODE END 4 */

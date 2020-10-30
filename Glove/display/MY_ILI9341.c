@@ -439,7 +439,7 @@ void ILI9341_Init(SPI_HandleTypeDef *spiLcdHandle, GPIO_TypeDef *csPORT, uint16_
 
 //5. Write data to a single pixel
 void ILI9341_DrawPixel(uint16_t x, uint16_t y, uint16_t color) {
-  ILI9341_SetCursorPosition(x, y, x, y);
+    ILI9341_SetCursorPosition(x, y, x, y);
 	ILI9341_SendData(color>>8);
 	ILI9341_SendData(color&0xFF);
 }
@@ -477,22 +477,22 @@ void ILI9341_Fill_Line (uint8_t* each_line, uint16_t index) {
 	}
 	if (each_line[1] == 1){
 		for(int lcv = 0; lcv < 25; lcv ++) {
-			orig_line[60+lcv] = COLOR_PURPLE;
+			orig_line[50+lcv] = COLOR_PURPLE;
 		}
 	}
 	if (each_line[2] == 1){
 		for(int lcv = 0; lcv < 25; lcv ++) {
-			orig_line[105+lcv] = COLOR_YELLOW;
+			orig_line[85+lcv] = COLOR_YELLOW;
 		}
 	}
 	if (each_line[3] == 1){
 		for(int lcv = 0; lcv < 25; lcv ++) {
-			orig_line[150+lcv] = COLOR_NAVY;
+			orig_line[120+lcv] = COLOR_NAVY;
 		}
 	}
 	if (each_line[4] == 1){
 		for(int lcv = 0; lcv < 25; lcv ++) {
-			orig_line[195+lcv] = COLOR_WHITE;
+			orig_line[155+lcv] = COLOR_WHITE;
 		}
 	}
 
@@ -517,16 +517,18 @@ void ILI9341_Fill_Black_Line(uint16_t index) {
 	HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_SET);
 }
 
+
 //7. Rectangle drawing functions
 void ILI9341_Fill_Rect(unsigned int x0,unsigned int y0, unsigned int x1,unsigned int y1, uint16_t color) { 
 	uint32_t n = ((x1+1)-x0)*((y1+1)-y0);
 	if (n>ILI9341_PIXEL_COUNT) n=ILI9341_PIXEL_COUNT;
 	ILI9341_SetCursorPosition(x0, y0, x1, y1);
 	while (n) {
-			n--;
+      n--;
       ILI9341_SendData(color>>8);
-				ILI9341_SendData(color&0xff);
+	  ILI9341_SendData(color&0xff);
 	}
+
 }
 
 //8. Circle drawing functions
@@ -776,8 +778,8 @@ void ILI9341_drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uin
      ((y + 6 * size - 1) < 0) || // Clip left
      ((x + 8 * size - 1) < 0))   // Clip top
     return;
-	}	
-	
+	}
+
 
   if(!_cp437 && (c >= 176)) c++; // Handle 'classic' charset behavior
 
@@ -812,6 +814,41 @@ void ILI9341_printText(char text[], int16_t x, int16_t y, uint16_t color, uint16
 	for(uint16_t i=0; i<40 && text[i]!=NULL; i++)
 	{
 		ILI9341_drawChar(x+(offset*i), y, text[i],color,bg,size);
+	}
+}
+
+void ILI9341_printGameScore(char text[], int16_t x, int16_t y, uint16_t color, uint16_t bg, uint8_t size)
+{
+	int16_t offset;
+	offset = size*6;
+
+	for(uint16_t index=0; index<40 && text[index]!=NULL; index++)
+	{
+//	  ILI9341_drawChar(x+(offset*index), y, text[index],color,bg,size);
+	  if(!_cp437 && (text[index] >= 176)) text[index]++; // Handle 'classic' charset behavior
+
+	  for (int8_t i=0; i<6; i++ ) {
+		uint8_t line;
+		if (i == 5)
+		  line = 0x0;
+		else
+		  line = pgm_read_byte(font1+(text[index]*5)+i);
+		for (int8_t j = 0; j<8; j++) {
+		  if (line & 0x1) {
+			  ILI9341_SetCursorPosition(x+(offset*index)+(i*size), y+(j*size), size +x+(offset*index)+(i*size), size+1 + y+(j*size));
+			  //Set DC LOW for DATA mode
+			  HAL_GPIO_WritePin(tftDC_GPIO, tftDC_PIN, GPIO_PIN_SET);
+			  //Put CS LOW
+			  HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_RESET);
+
+			  HAL_SPI_Transmit(&lcdSPIhandle, color, 1, 10);
+			  HAL_SPI_Transmit(&lcdSPIhandle, color, 1, 10);
+			  //Bring CS HIGH
+			  HAL_GPIO_WritePin(tftCS_GPIO, tftCS_PIN, GPIO_PIN_SET);
+			}
+		  line >>= 1;
+		}
+	  }
 	}
 }
 
