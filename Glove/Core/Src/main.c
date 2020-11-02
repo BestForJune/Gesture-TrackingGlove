@@ -79,7 +79,7 @@ void print_board(scoreboard * input_sb);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t screen[ILI9341_WIDTH *2] = {0x0000};
+uint8_t screen[ILI9341_WIDTH *2];
 game_arr g_arr;
 
 int start_cycle_x = 25;
@@ -96,7 +96,7 @@ char buffer [3];
 extern ApplicationTypeDef Appli_state;
 
 int test_track = 0;
-scoreboard * board;
+scoreboard board;
 char buf[20];
 
 /* USER CODE END 0 */
@@ -114,7 +114,9 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  for(int lcv = 0; lcv < ILI9341_WIDTH *2; lcv ++) {
+  		screen[lcv] = 0;
+  	}
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -144,8 +146,8 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   menu_page_setup();
-//  scoreboard_init(board); //bug
-  audioI2S_setHandle(&hi2s3);
+  scoreboard_init(&board); //bug
+//  audioI2S_setHandle(&hi2s3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -154,8 +156,8 @@ int main(void)
 	  /* USER CODE BEGIN 3 */
 
 	  		  //read GPIO
-	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
-//	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
+//	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
+	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
 	  			  state = GAME;
 	  			  game_arr_init(&g_arr, 5);
 	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
@@ -168,7 +170,6 @@ int main(void)
 	  			  arr_update(&g_arr);
 	  			  sprintf(buffer, "%d", game_score);
 	  			  ILI9341_printGameScore(buffer, 190, 20, COLOR_WHITE, COLOR_WHITE, 3);
-	  	//		  game_score++;
 	  			  test_track++;
 	  		  }
 
@@ -178,19 +179,16 @@ int main(void)
 	  			ILI9341_Fill(screen);
 	  			state = SCOREBOARD;
 	  			test_track = 0;
-	  			game_score = 0;
 	  		  }
 
 	  		  if (state == SCOREBOARD){
 	  			ILI9341_printText("Scoreboard", 50, 20, COLOR_GREEN, COLOR_GREEN, 2);
-//	  			scoreboard_update(board, "P1", 2, game_score); //bug
-//	  			print_board(board); //bug
-	  			sprintf(buf,"%s: %d", "player1", game_score); //testing purpose
-	  			ILI9341_printText(buf, 50, 100, COLOR_GREEN, COLOR_GREEN, 2);
+	  			scoreboard_update(&board, "P1", 2, game_score);
+	  			print_board(&board);
 	  		  }
 
-	  	      MX_USB_HOST_Process();
-	  	      music();
+//	  	      MX_USB_HOST_Process();
+//	  	      music();
   }
   /* USER CODE END 3 */
 }
@@ -569,7 +567,7 @@ void arr_update(game_arr * arr) {
 void print_board(scoreboard * input_sb) {
     for(short lcv = 0; lcv < MAX_PLAYER; lcv++) {
         to_string(&(input_sb->players[lcv]), input_sb->buf);
-        ILI9341_printText("wtf", 50, 100, COLOR_GREEN, COLOR_GREEN, 2);
+        ILI9341_printText(input_sb->buf, 50, 100 + lcv * 20, COLOR_GREEN, COLOR_GREEN, 2);
     }
 }
 /* USER CODE END 4 */
