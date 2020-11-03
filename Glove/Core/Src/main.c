@@ -29,6 +29,7 @@
 #include "wav_player.h"
 #include "game_arr.h"
 #include "score_board.h"
+#include "debounce.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,6 +40,7 @@
 /* USER CODE BEGIN PD */
 enum state_type{MENU, GAME, SCOREBOARD};
 enum music_status_enum {PLAYING, STOP};
+enum menu_option_enum {NO_USB, MENU_SB, START_GAME, MENU_SET_UP};
 #define WAV_FILE1 "cello.wav"
 /* USER CODE END PD */
 
@@ -75,6 +77,7 @@ void MX_USB_HOST_Process(void);
 void music();
 void arr_update(game_arr * arr);
 void print_board(scoreboard * input_sb);
+void menu_page_setup(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -88,6 +91,8 @@ int start_cycle_y = 25;
 int tim2_i = 0;
 enum state_type state = MENU;
 enum music_status_enum music_status = STOP;
+enum menu_option_enum menu_option = MENU_SET_UP;
+enum menu_option_enum menu_option_next = NO_USB;
 bool isMounted = 0;
 
 short game_score = 0;
@@ -98,6 +103,7 @@ extern ApplicationTypeDef Appli_state;
 int test_track = 0;
 scoreboard board;
 char buf[20];
+bool sb_set_up = false; //scoreboard setup
 
 /* USER CODE END 0 */
 
@@ -147,61 +153,103 @@ int main(void)
   /* USER CODE BEGIN 2 */
   menu_page_setup();
   scoreboard_init(&board); //bug
-//  audioI2S_setHandle(&hi2s3);
+  audioI2S_setHandle(&hi2s3);
+  init_debounce(history_index, bent_ref);
+  init_debounce(history_thumb, bent_ref);
   /* USER CODE END 2 */
 
   /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /* USER CODE BEGIN 3 */
+    /* USER CODE END WHILE */
+//    MX_USB_HOST_Process();
+
+    /* USER CODE BEGIN 3 */
 
 	  		  //read GPIO
 //	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
-	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
-	  			  state = GAME;
-	  			  game_arr_init(&g_arr, 5);
-	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
-	  		  }else {
-	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);
-	  		  }
+////	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
+//	  			  state = GAME;
+//	  			  game_arr_init(&g_arr, 5);
+//	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
+//	  		  }else {
+//	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);
+//	  		  }
 
-	  		  //test button and changes on screen
-	  		  if (state == GAME){
-	  			  arr_update(&g_arr);
-	  			  sprintf(buffer, "%d", game_score);
-	  			  ILI9341_printGameScore(buffer, 190, 20, COLOR_WHITE, COLOR_WHITE, 3);
-	  			  test_track++;
-	  		  }
+	  if(state == MENU) {
+		  update_debounce(history_index, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1));
+		  update_debounce(history_thumb, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_0));
+		  if(menu_option == NO_USB) {
+			  if(isMounted) { //state transition
+				  menu_option = MENU_SET_UP;
+				  menu_option_next = START_GAME;
+			  }
+		  }
+		  else if(menu_option == START_GAME) {
+			  if(isMounted == 0) { //state transition
+				  menu_option = MENU_SET_UP;
+				  menu_option_next = NO_USB;
+			  }
+			  else if(match_bent(history_thumb, bent_ref)) {
+				  state = GAME;
+			  } else if(match_bent(history_index, bent_ref)) { //state transition
+				  menu_option = MENU_SET_UP;
+				  menu_option_next = MENU_SB;
+			  }
+		  }
+		  else if(menu_option == MENU_SB) {
+			  if(isMounted == 0) { //state transition
+				  menu_option = MENU_SET_UP;
+				  menu_option_next = NO_USB;
+			  }
+			  else if(match_bent(history_thumb, bent_ref)) {
+				  state = SCOREBOARD;
+			  } else if(match_bent(history_index, bent_ref)) { //state transition
+				  menu_option = MENU_SET_UP;
+				  menu_option_next = START_GAME;
+			  }
+		  }
+		  menu_page_setup();
+	  }
 
-	  		  //test the situation when game ends
-	  		  //should be deleted
-	  		  if (test_track > 2000){
-	  			ILI9341_Fill(screen);
-	  			state = SCOREBOARD;
-	  			test_track = 0;
-	  		  }
+	  //test button and changes on screen
+	  if (state == GAME){
+		  arr_update(&g_arr);
+		  sprintf(buffer, "%d", game_score);
+		  ILI9341_printGameScore(buffer, 190, 20, COLOR_WHITE, COLOR_WHITE, 3);
+		  test_track++;
+	  }
 
-	  		  if (state == SCOREBOARD){
-	  			ILI9341_printText("Scoreboard", 50, 20, COLOR_GREEN, COLOR_GREEN, 2);
-	  			scoreboard_update(&board, "P1", 2, game_score);
-	  			print_board(&board);
-	  		  }
+	  //test the situation when game ends
+	  //should be deleted
+	  if (test_track > 2000){
+		ILI9341_Fill(screen);
+		state = SCOREBOARD;
+		test_track = 0;
+	  }
 
-//	  	      MX_USB_HOST_Process();
-//	  	      music();
+	  if (state == SCOREBOARD){
+		  if(!sb_set_up) {
+			ILI9341_Fill(screen);
+			ILI9341_printText("Scoreboard", 50, 20, COLOR_GREEN, COLOR_GREEN, 2);
+			print_board(&board);
+			sb_set_up = true;
+		  }
+//		scoreboard_update(&board, "P1", 2, game_score);
+		if(HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_0)) {
+			state = MENU;
+			menu_option = MENU_SET_UP;
+			menu_option_next = MENU_SB;
+			sb_set_up = false;
+		}
+	  }
+
+	  MX_USB_HOST_Process();
+	  music();
+
   }
   /* USER CODE END 3 */
-}
-
-void menu_page_setup(void){
-	//menu page setup
-	ILI9341_Fill(screen);
-    ILI9341_printText("Start", 50, 100, COLOR_GREEN, COLOR_GREEN, 5);
-    ILI9341_printText("ScoreBoard", 50, 180, COLOR_GREEN, COLOR_RED, 2);
-    ILI9341_printText("Music", 50, 220, COLOR_GREEN, COLOR_RED, 2);
-    ILI9341_printText("Setting", 50, 260, COLOR_GREEN, COLOR_RED, 2);
-
-    return;
 }
 
 /**
@@ -470,11 +518,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  /*Configure GPIO pins : PD0 PD1 PD2 PD3
+                           PD5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
+                          |GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LCD_CS_Pin */
   GPIO_InitStruct.Pin = LCD_CS_Pin;
@@ -502,6 +552,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
    */
+}
+
+
+void menu_page_setup(void){
+	//menu page setup
+//	ILI9341_Fill(screen);
+//    ILI9341_printText("GLOVE", 50, 100, COLOR_GREEN, COLOR_GREEN, 5);
+    if(menu_option == MENU_SET_UP){
+    	ILI9341_Fill(screen);
+		ILI9341_printText("GLOVE", 50, 100, COLOR_GREEN, COLOR_GREEN, 5);
+		menu_option = menu_option_next;
+    }
+    else if(menu_option == NO_USB) {
+    	ILI9341_printText("Please", 70, 180, COLOR_GREEN, COLOR_RED, 2);
+    	ILI9341_printText("Insert USB", 50, 220, COLOR_GREEN, COLOR_RED, 2);
+    }
+    else if(menu_option == START_GAME) {
+    	ILI9341_printText("Start Game", 50, 180, COLOR_GREEN, COLOR_RED, 2);
+    	ILI9341_printText("ScoreBoard", 50, 220, COLOR_GREEN, COLOR_BLACK, 2);
+//		HAL_Delay(300);
+    }
+    else if(menu_option == MENU_SB) {
+    	ILI9341_printText("Start Game", 50, 180, COLOR_GREEN, COLOR_BLACK, 2);
+		ILI9341_printText("ScoreBoard", 50, 220, COLOR_GREEN, COLOR_RED, 2);
+//		HAL_Delay(300);
+    }
+
+    return;
 }
 
 
@@ -567,8 +645,9 @@ void arr_update(game_arr * arr) {
 void print_board(scoreboard * input_sb) {
     for(short lcv = 0; lcv < MAX_PLAYER; lcv++) {
         to_string(&(input_sb->players[lcv]), input_sb->buf);
-        ILI9341_printText(input_sb->buf, 50, 100 + lcv * 20, COLOR_GREEN, COLOR_GREEN, 2);
+        ILI9341_printText(input_sb->buf, 50, 80 + lcv * 20, COLOR_GREEN, COLOR_BLACK, 2);
     }
+    ILI9341_printText("Bent thumb to go back", 50, 300, COLOR_GREEN, COLOR_BLACK, 1);
 }
 /* USER CODE END 4 */
 
