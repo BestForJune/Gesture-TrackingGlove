@@ -5,6 +5,8 @@
 #include "game_arr.h"
 #include <stdint.h>
 
+extern int game_score;
+
 
 void rand_gen(line* in_l, uint8_t seed) {
     uint8_t n = 5;
@@ -53,6 +55,11 @@ void arr_update(game_arr * arr) {
     uint8_t ptr = arr->head; // linked list traverse pointer
     while(ptr != MAX_LINE) {
         arr->lines[ptr].y_pos++;
+
+        // if(arr->lines[arr->lines[ptr].next].y_pos < HEIGHT && arr->lines[arr->lines[ptr].next].y_pos > 270) {
+        //     arr->lines[ptr].pattern[4] = 0;
+        // }
+
         if(arr->lines[arr->lines[ptr].next].y_pos >= HEIGHT) {
             arr->lines[ptr].next = MAX_LINE;
         }

@@ -152,7 +152,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   menu_page_setup();
-  scoreboard_init(&board); //bug
+  scoreboard_init(&board);
   audioI2S_setHandle(&hi2s3);
   init_debounce(history_index, bent_ref);
   init_debounce(history_thumb, bent_ref);
@@ -166,16 +166,6 @@ int main(void)
 //    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-
-	  		  //read GPIO
-//	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET && isMounted) {
-////	  		  if((GPIOA->IDR & GPIO_PIN_0) != (uint32_t)GPIO_PIN_RESET) {
-//	  			  state = GAME;
-//	  			  game_arr_init(&g_arr, 5);
-//	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_SET);
-//	  		  }else {
-//	  			  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_0, GPIO_PIN_RESET);
-//	  		  }
 
 	  if(state == MENU) {
 		  update_debounce(history_index, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1));
@@ -624,6 +614,7 @@ void music() {
 }
 
 void arr_update(game_arr * arr) {
+	int catch = 0;
     //condition to generate a new line
     if(arr->lines[arr->head].y_pos >= 150) {
         new_line(arr);
@@ -633,9 +624,36 @@ void arr_update(game_arr * arr) {
         arr->lines[ptr].y_pos++;
         ILI9341_Fill_Black_Line(arr->lines[ptr].y_pos - 10);
         ILI9341_Fill_Line(&arr->lines[ptr], arr->lines[ptr].y_pos + 10);
+		
+		if(HEIGHT > arr->lines[arr->lines[ptr].next].y_pos && arr->lines[arr->lines[ptr].next].y_pos > 270){
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_0)){
+				catch = 1;
+				arr->lines[ptr].pattern[0] = 0x0;
+			}
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1)){
+				catch = 1;
+				arr->lines[ptr].pattern[1] = 0x0;
+			}
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_2)){
+				catch = 1;
+				arr->lines[ptr].pattern[2] = 0x0;
+			}
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_3)){
+				catch = 1;
+				arr->lines[ptr].pattern[3] = 0x0;
+			}
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_5)){
+				catch = 1;
+				arr->lines[ptr].pattern[4] = 0x0;
+			}
+			
+			if (catch){
+				game_score++;
+				arr->lines[ptr].next = MAX_LINE;
+			}
+		}
         if(arr->lines[arr->lines[ptr].next].y_pos >= HEIGHT) {
             arr->lines[ptr].next = MAX_LINE;
-            game_score++;
         }
 
         ptr = arr->lines[ptr].next;
