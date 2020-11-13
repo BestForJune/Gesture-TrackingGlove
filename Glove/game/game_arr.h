@@ -15,6 +15,7 @@ typedef struct LINE{
     uint16_t y_pos;  // y position of this line
     uint8_t next; // next node of the linked list. MAX_LINE = null
     uint8_t seed;
+    uint8_t score; //0->if no longer eligible to score
 } line;
 
 void line_init(line*);

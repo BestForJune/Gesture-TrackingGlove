@@ -43,6 +43,7 @@ void new_line(game_arr * arr) {
     rand_gen(&arr->lines[arr->head], arr->lines[old_head].seed);
     arr->lines[arr->head].next = old_head;
     arr->lines[arr->head].y_pos = 9;
+    arr->lines[arr->head].score = 1;
 }
 
 //void arr_update(game_arr * arr) {

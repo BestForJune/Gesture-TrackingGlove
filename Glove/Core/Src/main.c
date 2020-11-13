@@ -58,6 +58,7 @@ DMA_HandleTypeDef hdma_spi3_tx;
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim7;
 
 /* USER CODE BEGIN PV */
 
@@ -71,6 +72,7 @@ static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
+static void MX_TIM7_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -78,6 +80,7 @@ void music();
 void arr_update(game_arr * arr);
 void print_board(scoreboard * input_sb);
 void menu_page_setup(void);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -88,7 +91,7 @@ game_arr g_arr;
 int start_cycle_x = 25;
 int start_cycle_y = 25;
 
-int tim2_i = 0;
+int game_setup = 0; //if the game has been set up or not
 enum state_type state = MENU;
 enum music_status_enum music_status = STOP;
 enum menu_option_enum menu_option = MENU_SET_UP;
@@ -150,6 +153,34 @@ int main(void)
   CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
   /* USER CODE END 1 */
 
+//  /* MCU Configuration--------------------------------------------------------*/
+//
+//  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+//  HAL_Init();
+//
+//  /* USER CODE BEGIN Init */
+//  for(int lcv = 0; lcv < ILI9341_WIDTH *2; lcv ++) {
+//  		screen[lcv] = 0;
+//  	}
+//  /* USER CODE END Init */
+//
+//  /* Configure the system clock */
+//  SystemClock_Config();
+//
+//  /* USER CODE BEGIN SysInit */
+//
+//  /* USER CODE END SysInit */
+//
+//  /* Initialize all configured peripherals */
+//  MX_GPIO_Init();
+//  MX_DMA_Init();
+//  MX_SPI1_Init();
+//  MX_TIM2_Init();
+//  MX_I2C1_Init();
+//  MX_I2S3_Init();
+//  MX_FATFS_Init();
+//  MX_USB_HOST_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
   menu_page_setup();
   scoreboard_init(&board);
@@ -183,6 +214,7 @@ int main(void)
 			  }
 			  else if(match_bent(history_thumb, bent_ref)) {
 				  state = GAME;
+				  game_setup = 0;
 			  } else if(match_bent(history_index, bent_ref)) { //state transition
 				  menu_option = MENU_SET_UP;
 				  menu_option_next = MENU_SB;
@@ -205,18 +237,31 @@ int main(void)
 
 	  //test button and changes on screen
 	  if (state == GAME){
-		  arr_update(&g_arr);
+		  if(!game_setup) {
+			  ILI9341_Fill(screen);
+			  HAL_TIM_Base_Start_IT(&htim7);
+			  game_setup = 1;
+		  }
+		  int ptr = g_arr.head;
+		  while(ptr != MAX_LINE) {
+//		          arr->lines[ptr].y_pos++;
+		          ILI9341_Fill_Black_Line(g_arr.lines[ptr].y_pos - 10);
+		          ILI9341_Fill_Line(&g_arr.lines[ptr].pattern, g_arr.lines[ptr].y_pos + 10);
+		          ptr = g_arr.lines[ptr].next;
+		  }
 		  sprintf(buffer, "%d", game_score);
-		  ILI9341_printGameScore(buffer, 190, 20, COLOR_WHITE, COLOR_WHITE, 3);
+		  ILI9341_printGameScore(buffer, 190, 20, COLOR_GREEN, COLOR_RED, 3);
 		  test_track++;
 	  }
 
 	  //test the situation when game ends
 	  //should be deleted
-	  if (test_track > 2000){
+	  if (test_track > 18000){
+		HAL_TIM_Base_Stop_IT(&htim7);
 		ILI9341_Fill(screen);
 		state = SCOREBOARD;
 		test_track = 0;
+		game_setup = 0;
 	  }
 
 	  if (state == SCOREBOARD){
@@ -445,6 +490,44 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 1000 - 1;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 1000 - 1;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -526,23 +609,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* Prevent unused argument(s) compilation warning */
-  if(htim->Instance == TIM2){
-	  for (int i = 0; i < 15; i++){
-		  ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * tim2_i, 10, COLOR_RED);
-		  ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * tim2_i, 10, COLOR_BLACK);
-//	  tim2_i++;
-//	  if (tim2_i == 14) {HAL_TIM_Base_Stop(&htim2);}
-	  }
-	  HAL_TIM_Base_Stop(&htim2);
-  }
-
-  /* NOTE : This function should not be modified, when the callback is needed,
-            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
-   */
-}
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//{
+//  /* Prevent unused argument(s) compilation warning */
+//  if(htim->Instance == TIM2){
+//	  for (int i = 0; i < 15; i++){
+//		  ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * tim2_i, 10, COLOR_RED);
+//		  ILI9341_fillCircle(start_cycle_x,start_cycle_y + 15 * tim2_i, 10, COLOR_BLACK);
+////	  tim2_i++;
+////	  if (tim2_i == 14) {HAL_TIM_Base_Stop(&htim2);}
+//	  }
+//	  HAL_TIM_Base_Stop(&htim2);
+//  }
+//
+//  /* NOTE : This function should not be modified, when the callback is needed,
+//            the HAL_TIM_PeriodElapsedCallback could be implemented in the user file
+//   */
+//}
 
 
 void menu_page_setup(void){
@@ -614,41 +697,51 @@ void music() {
 }
 
 void arr_update(game_arr * arr) {
-	int catch = 0;
+	int un_match = 0;
     //condition to generate a new line
-    if(arr->lines[arr->head].y_pos >= 150) {
+    if(arr->lines[arr->head].y_pos >= 90) {
         new_line(arr);
     }
     uint8_t ptr = arr->head; // linked list traverse pointer
     while(ptr != MAX_LINE) {
         arr->lines[ptr].y_pos++;
-        ILI9341_Fill_Black_Line(arr->lines[ptr].y_pos - 10);
-        ILI9341_Fill_Line(&arr->lines[ptr], arr->lines[ptr].y_pos + 10);
-		
-		if(HEIGHT > arr->lines[arr->lines[ptr].next].y_pos && arr->lines[arr->lines[ptr].next].y_pos > 270){
-			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_0)){
-				catch = 1;
-				arr->lines[ptr].pattern[0] = 0x0;
+//        ILI9341_Fill_Black_Line(arr->lines[ptr].y_pos - 10);
+//        ILI9341_Fill_Line(&arr->lines[ptr], arr->lines[ptr].y_pos + 10);
+        un_match = 0;
+		if(HEIGHT > arr->lines[ptr].y_pos && arr->lines[ptr].y_pos > 270){
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_0) ^ arr->lines[ptr].pattern[0]){
+				un_match = 1;
+//				arr->lines[ptr].pattern[0] = 0x0;
 			}
-			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1)){
-				catch = 1;
-				arr->lines[ptr].pattern[1] = 0x0;
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1) ^ arr->lines[ptr].pattern[1]){
+				un_match = 1;
+//				arr->lines[ptr].pattern[1] = 0x0;
 			}
-			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_2)){
-				catch = 1;
-				arr->lines[ptr].pattern[2] = 0x0;
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_2) ^ arr->lines[ptr].pattern[2]){
+				un_match = 1;
+//				arr->lines[ptr].pattern[2] = 0x0;
 			}
-			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_3)){
-				catch = 1;
-				arr->lines[ptr].pattern[3] = 0x0;
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_3) ^ arr->lines[ptr].pattern[3]){
+				un_match = 1;
+//				arr->lines[ptr].pattern[3] = 0x0;
 			}
-			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_5)){
-				catch = 1;
-				arr->lines[ptr].pattern[4] = 0x0;
+			int test1 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_5);
+			int test2 =  arr->lines[ptr].pattern[4];
+			if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_5) ^ arr->lines[ptr].pattern[4]){
+				un_match = 1;
+//				arr->lines[ptr].pattern[4] = 0x0;
 			}
 			
-			if (catch){
-				game_score++;
+			if (!un_match){
+				if(arr->lines[ptr].score) {
+					game_score++;
+					arr->lines[ptr].pattern[0] = 0x0;
+					arr->lines[ptr].pattern[1] = 0x0;
+					arr->lines[ptr].pattern[2] = 0x0;
+					arr->lines[ptr].pattern[3] = 0x0;
+					arr->lines[ptr].pattern[4] = 0x0;
+					arr->lines[ptr].score = 0;
+				}
 				arr->lines[ptr].next = MAX_LINE;
 			}
 		}
@@ -666,6 +759,16 @@ void print_board(scoreboard * input_sb) {
         ILI9341_printText(input_sb->buf, 50, 80 + lcv * 20, COLOR_GREEN, COLOR_BLACK, 2);
     }
     ILI9341_printText("Bent thumb to go back", 50, 300, COLOR_GREEN, COLOR_BLACK, 1);
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  // Check which version of the timer triggered this callback and toggle LED
+  if (htim == &htim7 )
+  {
+	  arr_update(&g_arr);
+    HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_11);
+  }
 }
 /* USER CODE END 4 */
 
