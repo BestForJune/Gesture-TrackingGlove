@@ -1,1 +1,4 @@
-CMakeLists.txt not found in D:\Gesture-TrackingGlove\game_test Select CMakeLists.txt file...
+"C:\Program Files\JetBrains\CLion 2020.2.1\bin\cmake\win\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - NMake Makefiles" D:\Gesture-TrackingGlove\game_test
+-- Configuring done
+-- Generating done
+-- Build files have been written to: D:/Gesture-TrackingGlove/game_test/cmake-build-debug

@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+D:/Gesture-TrackingGlove/game_test/sb_input.c
+sb_input.h
+D:/Gesture-TrackingGlove/game_test/sb_input.h
+
+D:/Gesture-TrackingGlove/game_test/sb_input.h
+score_board.h
+D:/Gesture-TrackingGlove/game_test/score_board.h
+stdint.h
+-
+
+D:/Gesture-TrackingGlove/game_test/score_board.h
+stdio.h
+-
+string.h
+-
+

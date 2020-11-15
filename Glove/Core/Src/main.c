@@ -30,6 +30,7 @@
 #include "game_arr.h"
 #include "score_board.h"
 #include "debounce.h"
+#include "sb_input.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,7 +39,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-enum state_type{MENU, GAME, SCOREBOARD};
+enum state_type{MENU, GAME, SCOREBOARD, ENTER_NAME, END_GAME};
 enum music_status_enum {PLAYING, STOP};
 enum menu_option_enum {NO_USB, MENU_SB, START_GAME, MENU_SET_UP};
 #define WAV_FILE1 "cello.wav"
@@ -102,11 +103,16 @@ short game_score = 0;
 char buffer [3];
 
 extern ApplicationTypeDef Appli_state;
-
-int test_track = 0;
 scoreboard board;
 char buf[20];
 bool sb_set_up = false; //scoreboard setup
+
+uint8_t history_index[HISTORY_NUM];
+uint8_t history_thumb[HISTORY_NUM];
+uint8_t history_middle[HISTORY_NUM];
+uint8_t history_ring[HISTORY_NUM];
+uint8_t history_little[HISTORY_NUM];
+uint8_t bent_ref[HISTORY_NUM];
 
 /* USER CODE END 0 */
 
@@ -149,7 +155,7 @@ int main(void)
   ILI9341_setRotation(0);
 
   CS43_Init(hi2c1, MODE_I2S);
-  CS43_SetVolume(230);//0-255
+  CS43_SetVolume(180);//0-255
   CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
   /* USER CODE END 1 */
 
@@ -187,6 +193,9 @@ int main(void)
   audioI2S_setHandle(&hi2s3);
   init_debounce(history_index, bent_ref);
   init_debounce(history_thumb, bent_ref);
+  init_debounce(history_middle, bent_ref);
+  init_debounce(history_ring, bent_ref);
+  init_debounce(history_little, bent_ref);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -234,9 +243,8 @@ int main(void)
 		  }
 		  menu_page_setup();
 	  }
-
 	  //test button and changes on screen
-	  if (state == GAME){
+	  else if (state == GAME){
 		  if(!game_setup) {
 			  ILI9341_Fill(screen);
 			  HAL_TIM_Base_Start_IT(&htim7);
@@ -251,20 +259,28 @@ int main(void)
 		  }
 		  sprintf(buffer, "%d", game_score);
 		  ILI9341_printGameScore(buffer, 190, 20, COLOR_GREEN, COLOR_RED, 3);
-		  test_track++;
+//		  test_track++;
+		  //test the situation when game ends
+		  //should be deleted
+		  if (music_status == STOP){
+			HAL_TIM_Base_Stop_IT(&htim7);
+			ILI9341_Fill(screen);
+			state = ENTER_NAME;
+//			test_track = 0;
+			game_setup = 0;
+		  }
 	  }
-
-	  //test the situation when game ends
-	  //should be deleted
-	  if (test_track > 18000){
-		HAL_TIM_Base_Stop_IT(&htim7);
-		ILI9341_Fill(screen);
-		state = SCOREBOARD;
-		test_track = 0;
-		game_setup = 0;
+	  else if( state == ENTER_NAME) {
+		  game_end(game_score);
+		  game_score = 0;
+		  state = END_GAME;
+		  ILI9341_Fill(screen);
 	  }
-
-	  if (state == SCOREBOARD){
+	  else if(state == END_GAME) {
+		  state = MENU;
+		  menu_option = MENU_SET_UP;
+	  }
+	  else if (state == SCOREBOARD){
 		  if(!sb_set_up) {
 			ILI9341_Fill(screen);
 			ILI9341_printText("Scoreboard", 50, 20, COLOR_GREEN, COLOR_GREEN, 2);
@@ -684,7 +700,7 @@ void music() {
 					music_status = PLAYING;
 				} else {
 					if(wavPlayer_isFinished()) {
-						state = MENU;
+//						state = MENU;
 						music_status = STOP;
 						wavPlayer_stop();
 						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
