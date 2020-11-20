@@ -155,7 +155,7 @@ int main(void)
   ILI9341_setRotation(0);
 
   CS43_Init(hi2c1, MODE_I2S);
-  CS43_SetVolume(180);//0-255
+  CS43_SetVolume(230);//0-255
   CS43_Enable_RightLeft(CS43_RIGHT_LEFT);
   /* USER CODE END 1 */
 
@@ -612,7 +612,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
                           |GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LCD_CS_Pin */

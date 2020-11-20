@@ -3786,3 +3786,63 @@ Cannot execute this command while the selected thread is running.
 java.lang.Exception: Cannot execute this command while the selected thread is running.
 	at org.eclipse.cdt.dsf.mi.service.command.AbstractMIControl$RxThread.processMIOutput(AbstractMIControl.java:993)
 	at org.eclipse.cdt.dsf.mi.service.command.AbstractMIControl$RxThread.run(AbstractMIControl.java:822)
+!SESSION 2020-11-15 21:09:10.697 -----------------------------------------------
+eclipse.buildId=Version 1.4.2
+java.version=1.8.0_252
+java.vendor=AdoptOpenJDK
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2020-11-15 21:09:16.434
+!MESSAGE Log4j initialized with config file D:\Gesture-TrackingGlove\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2020-11-15 21:09:24.299
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 4 4 2020-11-15 21:09:24.863
+!MESSAGE com.st.stm32cube.ide.mcu.ide/META-INF/version/build_ref file not found, build reference will not be reported into properties
+!SESSION 2020-11-18 13:07:43.168 -----------------------------------------------
+eclipse.buildId=Version 1.4.2
+java.version=1.8.0_252
+java.vendor=AdoptOpenJDK
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2020-11-18 13:07:52.142
+!MESSAGE Log4j initialized with config file D:\Gesture-TrackingGlove\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2020-11-18 13:08:03.168
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 4 4 2020-11-18 13:08:03.722
+!MESSAGE com.st.stm32cube.ide.mcu.ide/META-INF/version/build_ref file not found, build reference will not be reported into properties
+!SESSION 2020-11-20 00:39:27.312 -----------------------------------------------
+eclipse.buildId=Version 1.4.2
+java.version=1.8.0_252
+java.vendor=AdoptOpenJDK
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2020-11-20 00:39:40.421
+!MESSAGE Log4j initialized with config file D:\Gesture-TrackingGlove\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2020-11-20 00:39:52.009
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 4 4 2020-11-20 00:39:52.568
+!MESSAGE com.st.stm32cube.ide.mcu.ide/META-INF/version/build_ref file not found, build reference will not be reported into properties
+!SESSION 2020-11-20 14:06:09.001 -----------------------------------------------
+eclipse.buildId=Version 1.4.2
+java.version=1.8.0_252
+java.vendor=AdoptOpenJDK
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2020-11-20 14:06:16.771
+!MESSAGE Log4j initialized with config file D:\Gesture-TrackingGlove\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2020-11-20 14:06:27.062
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 4 4 2020-11-20 14:06:27.625
+!MESSAGE com.st.stm32cube.ide.mcu.ide/META-INF/version/build_ref file not found, build reference will not be reported into properties
